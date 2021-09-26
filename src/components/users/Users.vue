@@ -48,7 +48,7 @@
                         <v-text-field v-model.number="dialog.edit.editedItem.uiScore" label="UI Score" readonly></v-text-field>
                       </v-col>
                       <v-col cols="12" sm="6" md="4">
-                        <v-text-field v-model.number="dialog.edit.editedItem.androidScore" label="Android Score" readonly></v-text-field>
+                        <v-text-field v-model.number="dialog.edit.editedItem.devScore" label="Dev Score" readonly></v-text-field>
                       </v-col>
                       <v-col cols="12" sm="6" md="4">
                         <v-text-field v-model.number="dialog.edit.editedItem.mlScore" label="ML Score" readonly></v-text-field>
@@ -87,8 +87,8 @@
                           v-model="dialog.edit.percent"
                           label="score percents"
                           class="align-center"
-                          :max="150"
-                          :min="10"
+                          :max="300"
+                          :min="0"
                           thumb-label="always"
                         >
                           <template v-slot:append>
@@ -215,6 +215,13 @@ export default {
         isFormValid: true,
         isShowProgress: false,
         isFormEditable: true,
+        defaultProblem: {
+          problemID: 0,
+          problemTitle: '',
+          problemField: 0,
+          problemScore: 0,
+          currentScore: 0
+        },
         changingProblem: {
           problemID: 0,
           problemTitle: '',
@@ -227,7 +234,7 @@ export default {
           totalScore: 0,
           webScore: 0,
           uiScore: 0,
-          androidScore: 0,
+          devScore: 0,
           mlScore: 0,
           securityScore: 0,
           basicScore: 0
@@ -237,18 +244,19 @@ export default {
           totalScore: 0,
           webScore: 0,
           uiScore: 0,
-          androidScore: 0,
+          devScore: 0,
           mlScore: 0,
           securityScore: 0,
           basicScore: 0
         },
+        historyPercent: [], // problemID, percent (with)
         percent: 0,
         problemItem: [],
         problems: { // 某个用户上传的题目数据
           web: [],
           ui: [],
           ml: [],
-          android: [],
+          dev: [],
           security: [],
           basic: []
         }, 
@@ -273,7 +281,7 @@ export default {
       { text: 'Total Score', value: 'totalScore', filterable: false },
       { text: 'Web Score', value: 'webScore', filterable: false },
       { text: 'UI Score', value: 'uiScore', filterable: false },
-      { text: 'Android Score', value: 'androidScore', filterable: false },
+      { text: 'Dev Score', value: 'devScore', filterable: false },
       { text: 'ML Score', value: 'mlScore', filterable: false },
       { text: 'Security Score', value: 'securityScore', filterable: false },
       { text: 'Basic Score', value: 'basicScore', filterable: false },
@@ -284,7 +292,7 @@ export default {
       'web',
       'ui',
       'ml',
-      'android',
+      'dev',
       'security',
       'basic'
     ]
@@ -297,9 +305,12 @@ export default {
       this.initialize();
     }
   },
-
+  
   created: function(){
     this.initialize();
+    this.$watch('dialog.edit.changingProblem.problemID', function(newVal, oldVal) {
+      this.dialog.edit.percent = this.dialog.edit.historyPercent[newVal];
+    })
   },
 
   methods: {
@@ -320,13 +331,15 @@ export default {
       let that = this;
       that.editedIndex = that.contents.indexOf(item);
       that.dialog.edit.editedItem = Object.assign({}, item);
-      that.dialog.edit.isShow = true;
+      that.dialog.edit.percent = 0;
+      that.dialog.edit.historyPercent = [];
       that.dialog.edit.problemItem = [];
+      that.dialog.edit.changingProblem = that.dialog.edit.defaultProblem;
       for(let field in that.dialog.edit.problems) that.dialog.edit.problems[field] = [];
       that.$request.get("/api/admin/users/getalluploads/" + item.userID).then( ret => {
         for(let problem of ret.data) that.dialog.edit.problems[that.fieldItem[problem.problemField]].push(problem);
         for(let field in that.dialog.edit.problems) {
-          // problem: web ui ml android ...
+          // problem: web ui ml dev ...
           // dialog.edit.problems[problem]: Array of dialog.edit.problems in this field
           that.dialog.edit.problemItem.push({ header: field });
           for(let problem of that.dialog.edit.problems[field]) {
@@ -335,6 +348,15 @@ export default {
           that.dialog.edit.problemItem.push({ divider: true });
         }
         that.dialog.edit.problemItem.pop() // pop the last divider
+        that.$request.get("/api/admin/users/getusersubmits/" + item.userID).then( ret => {
+          if(ret.data.length == 0) return;
+          for (let submit of ret.data) {
+            that.dialog.edit.historyPercent[submit.problemID] = submit.magnification * 100
+          }
+        }).catch( err => {
+          console.log(err);
+        })
+        that.dialog.edit.isShow = true; // finally show the dialog
       }).catch( err => {
         console.log(err);
       })
@@ -375,7 +397,6 @@ export default {
           }
         }
         that.dialog.profile.profile = ret.data;
-        console.log(ret);
       }).catch( err => {
         console.log(err);
       })
@@ -388,10 +409,11 @@ export default {
         responseType: "blob"
       }).then( ret => {
         let content = ret.data;
-        let fileName = ret.headers.filename;
+        let fileName = decodeURIComponent(atob(ret.headers.filename).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
         const blob = new Blob([content]);
         const url = window.URL.createObjectURL(blob);
-        console.log(url);
         let dom = document.createElement('a');
         dom.style.display = 'none';
         dom.href = url;
@@ -424,7 +446,7 @@ export default {
         webScore: that.dialog.edit.editedItem.webScore,
         uiScore: that.dialog.edit.editedItem.uiScore,
         mlScore: that.dialog.edit.editedItem.mlScore,
-        androidScore: that.dialog.edit.editedItem.androidScore,
+        devScore: that.dialog.edit.editedItem.devScore,
         securityScore: that.dialog.edit.editedItem.securityScore,
         basicScore: that.dialog.edit.editedItem.basicScore
       };

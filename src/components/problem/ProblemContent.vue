@@ -3,15 +3,15 @@
     <v-container fluid>
       <v-row>
         <v-col
-            v-for="item in items"
-            :key="item.name"
+            v-for="(item, index) of items"
+            :key="index"
             cols="12"
             sm="6"
             md="4"
             lg="3"
           >
-          <v-hover v-slot:default="{ hover }">
-            <v-card :elevation="hover ? 8 : 2" style="height:100%"> 
+          <v-hover v-slot:default="{ hover }" >
+            <v-card :elevation="hover ? 8 : 2" style="height:100%" draggable="true" @dragover="allowDrop($event)" @dragstart="drag($event,index)" @drop="drop($event,index)">
               <v-card-title class="subheading font-weight-bold">题目名:{{ item.problemTitle }}</v-card-title>
 
               <v-divider></v-divider>
@@ -63,7 +63,7 @@
                 </v-btn>
               </div>
             </v-card>
-          </v-hover>  
+          </v-hover>
         </v-col> 
         <v-col cols="12" sm="6" md="4" lg="3">
           <v-hover v-slot:default="{ hover }">
@@ -166,6 +166,19 @@ export default {
         return pattern.test(value) || 'Invalid.';
       },
     ],
+    cardMoving: {
+      cardPosition: {
+        left: "0px",
+        top: "0px"
+      },
+      cardMovingFlag: 0,
+      originLeft: 0,
+      originTop: 0,
+      currLeft: 0,
+      currTop: 0
+    },
+    
+    cardMovingFlag: 0,
     isEditingFormValid: true,
     editingFormLazy: false,
     isShowProgress: false,
@@ -221,9 +234,35 @@ export default {
     }
   },
   created:function(){
-
+    
   },
   methods: {
+    allowDrop: function(event) {
+      event.preventDefault();
+      
+    },
+    drop: function(event, index) {
+      event.preventDefault();
+      let startIndex = parseInt(event.dataTransfer.getData('index'));
+      let currentIndex = parseInt(index);
+      if (startIndex - currentIndex > 0) {
+        this.items.splice(currentIndex, 0, this.items[startIndex]);
+        this.items.splice(startIndex + 1, 1)
+      } else if (startIndex - currentIndex < 0) {
+        this.items.splice(currentIndex + 1, 0, this.items[startIndex]);
+        this.items.splice(startIndex, 1)
+      }
+      
+      this.$request.post("/api/admin/problem/sort", this.items).then( ret => {
+        // console.log(ret);
+      }).catch( err => {
+        console.log(err);
+      })
+    },
+    drag: function(event, index) {
+      event.dataTransfer.setData('index', index);
+      
+    },
     newProblem:function(){
       let that = this;
       let url = "/api/admin/problem/newproblem/" + that.$store.state.field[that.$route.hash.replace("#","")];
@@ -351,7 +390,9 @@ export default {
         responseType: "blob"
       }).then( ret => {
         let content = ret.data;
-        let fileName = ret.headers.filename;
+        let fileName = decodeURIComponent(atob(ret.headers.filename).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
         const blob = new Blob([content]);
         const url = window.URL.createObjectURL(blob);
         console.log(url);

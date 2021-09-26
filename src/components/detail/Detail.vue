@@ -15,8 +15,8 @@
             <v-tab to="/index/detail#ml" @click="getData('2')">
             机器学习
             </v-tab>
-            <v-tab to="/index/detail#android" @click="getData('3')">
-            安卓
+            <v-tab to="/index/detail#dev" @click="getData('3')">
+            DevOps
             </v-tab>
             <v-tab to="/index/detail#security" @click="getData('4')">
             网络安全

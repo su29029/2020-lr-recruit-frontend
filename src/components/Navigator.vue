@@ -1,14 +1,14 @@
 <template>
     <div id="nav">
-        <v-app-bar color="primary accent-4" scroll-target="#scrolling-techniques-7" fixed style="height:64px;margin-top:0px;transform:translateY(0px);left:0px;right:0px;">
+        <v-app-bar color="primary accent-4" fixed style="height:64px;margin-top:0px;transform:translateY(0px);left:0px;right:0px;">
         <v-app-bar-nav-icon @click.stop="show" v-if="$store.state.drawer.smallScreen"></v-app-bar-nav-icon>
 
             <v-toolbar-title @click.stop="goIndex" style="cursor:pointer;color:white">凌睿招新后台管理系统</v-toolbar-title>
 
             <v-spacer></v-spacer>
-            <v-text text id="user" style="color:white;min-width=50px">{{loginStatus}}</v-text>
+            <v-text text id="user" style="color:white;min-width:50px">{{ loginStatus }}</v-text>
             <v-btn text @click.native="run(isLogin)" :to="login" style="color:white">
-                {{btn}}
+                {{ btn }}
             </v-btn>
         </v-app-bar>
     </div>

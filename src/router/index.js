@@ -70,7 +70,6 @@ VueRouter.prototype.push = function push(location){
 }
 
 router.beforeEach(( to, from, next ) => {
-  console.log(to);
   if (to.name != 'login'){
     if (store.state.user){
       next();

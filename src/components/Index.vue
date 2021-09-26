@@ -74,7 +74,7 @@ export default {
             btn: '',
             message: '',
             login: '',
-            isLogin: ''
+            isLogin: 0
         },
         snackbar: {
             show: false,
@@ -113,7 +113,7 @@ export default {
         } else {
             that.$router.push('/login')
         }
-        that.createWebSocket();
+        // that.createWebSocket();
     },
     computed: {
         isSmallScreen(){

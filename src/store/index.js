@@ -13,7 +13,7 @@ export default new Vuex.Store({
       "web": 0,
       "ui": 1,
       "ml": 2,
-      "android": 3,
+      "dev": 3,
       "security": 4,
       "basic": 5
     },
